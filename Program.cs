@@ -1,3 +1,6 @@
+//this is personal project 
+
+
 using BrokeButWoke.Data;
 using BrokeButWoke.Services.ExpenseService;
 using BrokeButWoke.Services.MainCategoryService;
