@@ -15,22 +15,22 @@ namespace BrokeButWoke.Services.SubCategoryService
                 _context = context;
             }
 
-            public async Task<IEnumerable<SubCategoryDto>> GetAllAsync()
-            {
-                return await _context.SubCategories
-                    .Select(sc => new SubCategoryDto
-                    {
-                        Id = sc.Id,
-                        Name = sc.Name,
-                        MainCategoryId = sc.MainCategoryId,
-                        TotalExpenses = sc.TotalExpenses,
-                        CreatedAt = sc.CreatedAt
-                    })
-                    .ToListAsync();
+        public async Task<IEnumerable<SubCategoryDto>> GetAllAsync(Guid mainCategoryId)
+        {
+            return await _context.SubCategories
+                .Where(sc => sc.MainCategoryId == mainCategoryId) 
+                .Select(sc => new SubCategoryDto
+                {
+                    Id = sc.Id,
+                    Name = sc.Name,
+                    MainCategoryId = sc.MainCategoryId,
+                    TotalExpenses = sc.TotalExpenses,
+                    CreatedAt = sc.CreatedAt
+                })
+                .ToListAsync();
+        }
 
-            }
-
-            public async Task<SubCategoryDto> GetByIdAsync(Guid id)
+        public async Task<SubCategoryDto> GetByIdAsync(Guid id)
             {
                 var subCategory = await _context.SubCategories.FindAsync(id);
                 if (subCategory == null) return null;
@@ -70,8 +70,8 @@ namespace BrokeButWoke.Services.SubCategoryService
                 if (subCategory == null) return null;
 
                 subCategory.Name = subCategoryDto.Name;
-                subCategory.MainCategoryId = subCategoryDto.MainCategoryId;
-                subCategory.TotalExpenses = subCategoryDto.TotalExpenses;
+                //subCategory.MainCategoryId = subCategoryDto.MainCategoryId;
+                //subCategory.TotalExpenses = subCategoryDto.TotalExpenses;
 
                 _context.SubCategories.Update(subCategory);
                 await _context.SaveChangesAsync();

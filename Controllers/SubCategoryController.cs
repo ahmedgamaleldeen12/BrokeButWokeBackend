@@ -15,11 +15,12 @@ namespace BrokeButWoke.Controllers
             _subCategoryService = subCategoryService;
         }
 
-        [HttpGet]
-        public async Task<IActionResult> GetAll()
+        [HttpGet("by-main-category/{mainCategoryId}")]
+        public async Task<IActionResult> GetAllSubCatgeoriesByMainCategoryId(Guid mainCategoryId)
         {
-            var subCategories = await _subCategoryService.GetAllAsync();
-            return Ok(subCategories);
+            var subCategories = await _subCategoryService.GetAllAsync(mainCategoryId);
+
+            return Ok(subCategories ?? new List<SubCategoryDto>());
         }
 
         [HttpGet("{id}")]

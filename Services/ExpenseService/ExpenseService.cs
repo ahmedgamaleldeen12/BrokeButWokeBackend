@@ -49,7 +49,7 @@ namespace BrokeButWoke.Services.ExpenseService
             {
                 Id = Guid.NewGuid(),
                 Cost = dto.Cost,
-                Date = dto.Date,
+                Date = DateTime.UtcNow,
                 SubCategoryId = dto.SubCategoryId
             };
 

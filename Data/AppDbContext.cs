@@ -39,74 +39,52 @@ namespace BrokeButWoke.Data
                 .Property(s => s.CreatedAt)
                 .HasDefaultValueSql("GETUTCDATE()"); 
         }
-        public override int SaveChanges()
+        public override async Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
         {
             UpdateSubCategoryExpenses();
             UpdateMainCategoryExpenses();
-            HandleExpenseDeletions();
-            return base.SaveChanges();
+            return await base.SaveChangesAsync(cancellationToken);
         }
 
         private void UpdateSubCategoryExpenses()
         {
-            var newExpenses = ChangeTracker.Entries<Expense>()
-                .Where(e => e.State == EntityState.Added)
-                .Select(e => e.Entity)
+            var affectedSubCategories = ChangeTracker.Entries<Expense>()
+                .Where(e => e.State == EntityState.Added || e.State == EntityState.Modified || e.State == EntityState.Deleted)
+                .Select(e => e.Entity.SubCategoryId)
+                .Distinct()
                 .ToList();
 
-            foreach (var expense in newExpenses)
+            var subCategories = SubCategories
+                .Where(sc => affectedSubCategories.Contains(sc.Id))
+                .Include(sc => sc.Expenses)
+                .ToList();
+
+            foreach (var subCategory in subCategories)
             {
-                var subCategory = SubCategories.Find(expense.SubCategoryId);
-                if (subCategory != null)
-                {
-                    subCategory.TotalExpenses += expense.Cost;
-                }
+                subCategory.TotalExpenses = subCategory.Expenses.Sum(e => e.Cost);
             }
         }
 
         private void UpdateMainCategoryExpenses()
         {
-            var newExpenses = ChangeTracker.Entries<Expense>()
-                .Where(e => e.State == EntityState.Added)
-                .Select(e => e.Entity)
+            var affectedMainCategories = ChangeTracker.Entries<Expense>()
+                .Where(e => e.State == EntityState.Added || e.State == EntityState.Modified || e.State == EntityState.Deleted)
+                .Select(e => e.Entity.SubCategoryId)
+                .Distinct()
                 .ToList();
 
-            foreach (var expense in newExpenses)
+            var mainCategories = MainCategories
+                .Where(mc => SubCategories.Where(sc => affectedMainCategories.Contains(sc.Id)).Select(sc => sc.MainCategoryId).Contains(mc.Id))
+                .Include(mc => mc.SubCategories)
+                .ThenInclude(sc => sc.Expenses)
+                .ToList();
+
+            foreach (var mainCategory in mainCategories)
             {
-                var subCategory = SubCategories.Find(expense.SubCategoryId);
-                if (subCategory != null)
-                {
-                    var mainCategory = MainCategories.Find(subCategory.MainCategoryId);
-                    if (mainCategory != null)
-                    {
-                        mainCategory.TotalExpenses += expense.Cost;
-                    }
-                }
+                mainCategory.TotalExpenses = mainCategory.SubCategories.Sum(sc => sc.Expenses.Sum(e => e.Cost));
             }
         }
 
-        private void HandleExpenseDeletions()
-        {
-            var deletedExpenses = ChangeTracker.Entries<Expense>()
-                .Where(e => e.State == EntityState.Deleted)
-                .Select(e => e.Entity)
-                .ToList();
-
-            foreach (var expense in deletedExpenses)
-            {
-                var subCategory = SubCategories.Find(expense.SubCategoryId);
-                if (subCategory != null)
-                {
-                    subCategory.TotalExpenses -= expense.Cost;
-                    var mainCategory = MainCategories.Find(subCategory.MainCategoryId);
-                    if (mainCategory != null)
-                    {
-                        mainCategory.TotalExpenses -= expense.Cost;
-                    }
-                }
-            }
-
-        }
     }
 
 }
